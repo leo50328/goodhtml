@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTMI 執行器</title>
+    <style>
+        /* 顏色變量 */
+        :root {
+            --chrome-dark-bg: #1e1e1e;
+            --chrome-tab-bg: #3c3c3c;
+            --chrome-tab-active: #2d2d2d;
+            --chrome-text-light: #cccccc;
+            --chrome-text-dark: #f0f0f0;
+            --chrome-border: #4a4a4a;
+            --primary-color: #3b873b; /* 深綠色 */
+            --primary-color-hover: #2e702e;
+            --secondary-color: #555555;
+            --secondary-color-hover: #444444;
+            --danger-color: #8c2a2a;
+            --danger-color-hover: #702121;
+        }
+
+        /* 佔滿畫面設置 */
+        body {
+            font-family: 'Google Sans', Roboto, Arial, sans-serif;
+            margin: 0;
+            background-color: var(--chrome-dark-bg); 
+            color: var(--chrome-text-light);
+            display: flex;
+            flex-direction: column;
+            height: 100vh; 
+            width: 100vw; 
+            overflow: hidden; 
+            font-size: 14px;
+        }
+
+        .container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 5px;
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+        }
+
+        /* 頂部控制區 */
+        .top-controls {
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 5px;
+            flex-shrink: 0;
+        }
+        
+        /* Google Chrome 分頁樣式 */
+        .tab-bar {
+            display: flex;
+            justify-content: flex-start;
+            align-items: flex-end;
+            border-bottom: 2px solid var(--chrome-border);
+            padding-right: 5px;
+            height: 33px; 
+        }
+
+        /* 新增分頁按鈕 (放置在最左側) */
+        #addNewFileButton {
+            background-color: var(--chrome-tab-bg);
+            color: var(--chrome-text-light);
+            border: 1px solid var(--chrome-border);
+            border-bottom: 2px solid var(--chrome-border); 
+            padding: 0 8px; 
+            line-height: 25px;
+            height: 25px; 
+            font-size: 18px; 
+            border-radius: 4px;
+            margin-right: 5px; 
+            margin-bottom: 0;
+            box-shadow: none;
+            transition: background-color 0.1s;
+            font-weight: bold;
+        }
+        #addNewFileButton:hover {
+            background-color: #444444;
+        }
+
+        .file-tabs {
+            display: flex;
+            gap: 0;
+            overflow-x: auto;
+            padding-bottom: 0;
+            margin-bottom: -2px; 
+            flex-grow: 1;
+        }
+        
+        /* 單個分頁樣式 */
+        .file-tab {
+            display: flex;
+            align-items: center;
+            padding: 6px 15px 6px 10px; 
+            cursor: pointer;
+            background-color: var(--chrome-tab-bg);
+            border: 1px solid var(--chrome-border);
+            border-bottom: none;
+            border-radius: 6px 6px 0 0; 
+            font-size: 13px;
+            color: var(--chrome-text-light);
+            margin-right: 2px;
+            transition: background-color 0.1s;
+            white-space: nowrap;
+            user-select: none;
+        }
+        .file-tab:hover {
+            background-color: #444444; 
+        }
+        /* 活動分頁 */
+        .file-tab.active {
+            background-color: var(--chrome-tab-active);
+            border-color: var(--chrome-border);
+            border-bottom: 2px solid var(--chrome-tab-active); 
+            color: var(--chrome-text-dark);
+            font-weight: 600;
+        }
+        .file-tab .close-btn {
+            margin-left: 8px; 
+            font-size: 14px;
+            color: var(--chrome-text-light);
+        }
+        
+        /* 檔名和副檔名輸入區域 */
+        .filename-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+        #filename-base-input, #extension-select {
+            padding: 4px 6px; 
+            border: 1px solid var(--chrome-border);
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--chrome-text-dark);
+            background-color: var(--chrome-tab-active);
+        }
+        
+        /* 程式碼/預覽區佈局 */
+        .editor-area {
+            display: flex;
+            gap: 5px; 
+            flex-grow: 1; 
+            min-height: 0; 
+        }
+        .code-panel, .preview-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-radius: 4px; 
+            overflow: hidden;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5); 
+            min-height: 0; 
+        }
+        
+        /* 預覽模式 CSS */
+        .preview-mode .code-panel { display: none; flex: 0; }
+        .preview-mode .preview-panel { flex: 100%; display: flex; }
+        .default-mode .preview-panel { display: none; flex: 0; }
+        .default-mode .code-panel { flex: 100%; }
+
+        .panel-title {
+            padding: 4px 6px; 
+            font-size: 13px;
+            background-color: var(--chrome-tab-bg); 
+            color: var(--chrome-text-dark);
+            flex-shrink: 0;
+            border-bottom: 1px solid var(--chrome-border);
+        }
+        
+        /* 程式碼編輯器 */
+        #editor {
+            flex-grow: 1;
+            padding: 5px; 
+            font-size: 13px;
+            border: none;
+            background-color: var(--chrome-tab-active); 
+            color: var(--chrome-text-dark);
+            outline: none;
+        }
+        #preview-iframe {
+            flex-grow: 1;
+            border: none;
+            background-color: white; 
+        }
+        
+        /* Q版純黑按鈕樣式 */
+        .file-action-controls { padding-top: 5px; }
+        .file-action-controls button {
+            padding: 6px 10px; 
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 13px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4); 
+            border: none;
+        }
+        
+        .primary { 
+            background-color: var(--primary-color);
+            color: white; 
+        }
+        .primary:hover { 
+            background-color: var(--primary-color-hover); 
+            transform: translateY(-1px);
+        }
+        .secondary { 
+            background-color: var(--secondary-color);
+            color: var(--chrome-text-dark); 
+        }
+        .secondary:hover { 
+            background-color: var(--secondary-color-hover); 
+            transform: translateY(-1px);
+        }
+        .danger { 
+            background-color: var(--danger-color); 
+            color: white; 
+        }
+        .danger:hover { 
+            background-color: var(--danger-color-hover); 
+            transform: translateY(-1px);
+        }
+        
+        /* 訊息提示 */
+        #status-message {
+            padding: 3px 6px;
+            font-size: 11px;
+            margin-top: 4px;
+            background-color: var(--chrome-border); 
+            color: var(--chrome-text-dark);
+        }
+    </style>
+</head>
+<body class="default-mode">
+
+<div class="container">
+    <div class="top-controls">
+        <div class="tab-bar">
+            <button class="secondary" onclick="addNewFileTab()" id="addNewFileButton">+</button>
+
+            <div class="file-tabs" id="fileTabs">
+                </div>
+        </div>
+
+        <div class="filename-group">
+            <label>檔案名稱:</label>
+            <input type="text" id="filename-base-input" placeholder="index" value="index">
+            
+            <select id="extension-select">
+                <option value=".html">.html</option>
+                <option value=".htm">.htm</option>
+                <option value=".txt">.txt</option>
+            </select>
+        </div>
+
+        <div class="file-action-controls">
+            <button class="secondary" onclick="undoCode()">↩️ 上一步</button>
+            <button class="secondary" onclick="redoCode()">↪️ 下一步</button>
+            <button class="secondary" onclick="pasteCode()">📎 貼上</button>
+            
+            <button class="secondary" onclick="copyCode()">📋 複製</button>
+            <button class="danger" onclick="clearCode()">❌ 清除</button>
+            <button class="danger" onclick="deleteFile(activeFile)">🗑️ 刪除頁面</button>
+
+            <button class="secondary" onclick="loadFromFile()">📥 匯入</button>
+            <button class="secondary" onclick="exportToFile()">📤 匯出</button>
+            
+            <button class="primary" onclick="executeCodeNewWindow()">↗️ 新視窗</button>
+
+            <button class="primary" onclick="toggleExecutePreview()" id="executeButton">▶️ 執行 (全覽)</button>
+        </div>
+        
+        <div id="status-message">程式碼執行器已準備就緒。</div>
+    </div>
+    
+    <div class="editor-area" id="editorArea">
+        <div class="code-panel">
+            <div class="panel-title">程式碼</div>
+            <textarea id="editor" placeholder="在此輸入您的 HTML, CSS, 和 JavaScript 程式碼..."></textarea>
+        </div>
+
+        <div class="preview-panel" id="previewPanel">
+            <div class="panel-title">預覽</div>
+            <iframe id="preview-iframe"></iframe>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 核心變數和 DOM 引用 ---
+    const editor = document.getElementById('editor');
+    const filenameBaseInput = document.getElementById('filename-base-input');
+    const extensionSelect = document.getElementById('extension-select');
+    const fileTabsContainer = document.getElementById('fileTabs');
+    const previewIframe = document.getElementById('preview-iframe');
+    const statusMessage = document.getElementById('status-message');
+    const executeButton = document.getElementById('executeButton');
+    const body = document.body;
+
+    const STORAGE_KEY = 'htmi_project_data_final_v9'; 
+    let projectData = {}; 
+    let activeFile = 'index'; 
+    let isPreviewVisible = false;
+
+    // --- 歷史記錄與編輯功能 ---
+    let history = {
+        stack: [],
+        pointer: -1,
+        limit: 50 
+    };
+
+    function pushHistory() {
+        if (editor.value === (history.stack[history.pointer]?.code || '')) {
+            return;
+        }
+        
+        if (history.pointer < history.stack.length - 1) {
+            history.stack = history.stack.slice(0, history.pointer + 1);
+        }
+        
+        history.stack.push({
+            code: editor.value,
+            baseName: filenameBaseInput.value,
+            extension: extensionSelect.value
+        });
+        
+        if (history.stack.length > history.limit) {
+            history.stack.shift();
+        } else {
+            history.pointer++;
+        }
+    }
+
+    function applyHistory(newPointer) {
+        if (newPointer >= 0 && newPointer < history.stack.length) {
+            history.pointer = newPointer;
+            const state = history.stack[history.pointer];
+            editor.value = state.code;
+            filenameBaseInput.value = state.baseName;
+            extensionSelect.value = state.extension;
+            saveProjectData();
+        }
+    }
+
+    window.undoCode = function() {
+        if (history.pointer > 0) {
+            applyHistory(history.pointer - 1);
+            showStatus('已撤銷上一步。');
+        } else {
+            showStatus('已是第一步。');
+        }
+    }
+
+    window.redoCode = function() {
+        if (history.pointer < history.stack.length - 1) {
+            applyHistory(history.pointer + 1);
+            showStatus('已重做下一步。');
+        } else {
+            showStatus('已是最新狀態。');
+        }
+    }
+    
+    window.pasteCode = async function() {
+        try {
+            const text = await navigator.clipboard.readText();
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            editor.value = editor.value.substring(0, start) + text + editor.value.substring(end);
+            editor.selectionStart = editor.selectionEnd = start + text.length;
+            editor.focus();
+            pushHistory();
+            saveProjectData();
+            showStatus('已從剪貼簿貼上。');
+        } catch (err) {
+            showStatus('貼上失敗，請檢查瀏覽器權限。');
+        }
+    }
+
+    // --- 輔助函式 ---
+    function showStatus(message, duration = 2000) {
+        statusMessage.textContent = message;
+        statusMessage.classList.add('visible');
+        setTimeout(() => {
+            statusMessage.classList.remove('visible');
+        }, duration);
+    }
+    
+    function getMimeType(ext) {
+        switch (ext) {
+            case '.txt': return 'text/plain';
+            case '.html':
+            case '.htm':
+            default: return 'text/html';
+        }
+    }
+    
+    function getFullFilename(base, ext) {
+        return base.replace(/\.(html|txt|htm)$/i, '') + ext;
+    }
+
+    // --- 內嵌預覽切換邏輯 ---
+    
+    function enterPreviewMode() {
+        const code = editor.value;
+        const blob = new Blob([code], { type: 'text/html' });
+        const blobUrl = URL.createObjectURL(blob);
+        previewIframe.src = blobUrl;
+        
+        body.classList.remove('default-mode');
+        body.classList.add('preview-mode');
+        executeButton.textContent = '◀️ 退出全覽';
+        isPreviewVisible = true;
+        showStatus('程式碼已執行 (全覽模式)。');
+    }
+
+    function exitPreviewMode() {
+        body.classList.remove('preview-mode');
+        body.classList.add('default-mode');
+        executeButton.textContent = '▶️ 執行 (全覽)';
+        isPreviewVisible = false;
+        showStatus('已退出全覽模式。');
+    }
+
+    window.toggleExecutePreview = function() {
+        if (isPreviewVisible) {
+            exitPreviewMode();
+        } else {
+            enterPreviewMode();
+        }
+    }
+
+    // --- 檔案與儲存邏輯 ---
+
+    function loadProjectData() {
+        const storedData = localStorage.getItem(STORAGE_KEY);
+        if (storedData) {
+            projectData = JSON.parse(storedData);
+        } else {
+            projectData = {
+                'index': { baseName: 'index', extension: '.html', code: '' }
+            };
+        }
+        if (!projectData[activeFile]) {
+            activeFile = Object.keys(projectData)[0];
+        }
+    }
+
+    function saveProjectData() {
+        if (projectData[activeFile]) {
+            projectData[activeFile].code = editor.value;
+            projectData[activeFile].baseName = filenameBaseInput.value;
+            projectData[activeFile].extension = extensionSelect.value;
+        }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(projectData));
+    }
+
+    function loadActiveFile() {
+        const file = projectData[activeFile];
+        if (file) {
+            editor.value = file.code;
+            filenameBaseInput.value = file.baseName;
+            extensionSelect.value = file.extension;
+            updateTabs();
+            exitPreviewMode();
+        }
+    }
+    
+    window.switchFile = function(newBaseName) {
+        if (newBaseName === activeFile) return;
+        saveProjectData();
+        pushHistory(); 
+        activeFile = newBaseName;
+        loadActiveFile();
+        history.stack = [];
+        history.pointer = -1;
+        pushHistory(); 
+    }
+    
+    function updateTabs() {
+        fileTabsContainer.innerHTML = '';
+        Object.values(projectData).forEach(file => {
+            const tab = document.createElement('div');
+            tab.classList.add('file-tab');
+            if (file.baseName === activeFile) {
+                tab.classList.add('active');
+            }
+            tab.textContent = file.baseName + file.extension;
+            tab.onclick = () => window.switchFile(file.baseName);
+            
+            tab.onmousedown = (e) => {
+                if (e.button === 1) { 
+                    e.preventDefault();
+                    window.deleteFile(file.baseName);
+                }
+            };
+
+            const closeBtn = document.createElement('span');
+            closeBtn.classList.add('close-btn');
+            closeBtn.innerHTML = '✖';
+            closeBtn.onclick = (e) => {
+                e.stopPropagation(); 
+                window.deleteFile(file.baseName);
+            };
+            tab.appendChild(closeBtn);
+            fileTabsContainer.appendChild(tab);
+        });
+    }
+
+    window.deleteFile = function(baseName) {
+        if (Object.keys(projectData).length === 1) {
+            showStatus('無法刪除最後一個檔案。');
+            return;
+        }
+
+        if (projectData[baseName]) {
+            delete projectData[baseName];
+            saveProjectData();
+            
+            if (baseName === activeFile) {
+                activeFile = Object.keys(projectData)[0];
+            }
+            loadActiveFile();
+            showStatus(`頁面 ${baseName} 已刪除。`);
+        }
+    }
+
+    // --- 介面操作函式 (其餘功能) ---
+
+    window.executeCodeNewWindow = function() {
+        const code = editor.value;
+        const blob = new Blob([code], { type: 'text/html' });
+        const blobUrl = URL.createObjectURL(blob);
+        
+        window.open(blobUrl, '_blank');
+        showStatus('在新視窗中開啟預覽。');
+    }
+    
+    window.addNewFileTab = function() {
+        saveProjectData();
+        let newBaseName = 'index';
+        let counter = 1;
+        let finalBaseName = newBaseName;
+        
+        while (projectData[finalBaseName]) {
+            finalBaseName = `${newBaseName}_${counter}`;
+            counter++;
+        }
+        
+        projectData[finalBaseName] = {
+            baseName: finalBaseName,
+            extension: '.html',
+            code: '', 
+        };
+
+        activeFile = finalBaseName;
+        loadActiveFile();
+        showStatus(`已新增頁面：${finalBaseName}.html`);
+    }
+
+    window.clearCode = function() {
+        editor.value = '';
+        saveProjectData();
+        pushHistory();
+        exitPreviewMode();
+        showStatus('程式碼已清除。');
+    }
+
+    window.copyCode = function() {
+        editor.select();
+        navigator.clipboard.writeText(editor.value)
+            .then(() => showStatus('程式碼已複製。'))
+            .catch(() => showStatus('複製失敗。'));
+    }
+    
+    window.exportToFile = function() {
+        saveProjectData(); 
+        const file = projectData[activeFile];
+        const filename = getFullFilename(file.baseName, file.extension); 
+        const mimeType = getMimeType(file.extension);
+
+        const blob = new Blob([file.code], { type: mimeType });
+        const a = document.createElement('a');
+        
+        a.href = URL.createObjectURL(blob);
+        a.download = filename; 
+        
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        showStatus(`檔案 "${filename}" 已匯出。`);
+    }
+
+    window.loadFromFile = function() {
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.html, .htm, .txt, .htmi'; 
+        
+        showStatus(`請選擇檔案匯入，將覆蓋當前頁面：${activeFile}${projectData[activeFile].extension}`);
+
+        fileInput.onchange = e => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = event => {
+                const parts = file.name.split('.');
+                const ext = parts.length > 1 ? '.' + parts.pop().toLowerCase() : '.html';
+                const baseName = parts.slice(0, -1).join('.') || 'index';
+
+                projectData[activeFile] = {
+                    baseName: baseName,
+                    extension: ext,
+                    code: event.target.result
+                };
+                
+                loadActiveFile(); 
+                showStatus(`檔案 "${file.name}" 匯入成功。`);
+            };
+            reader.readAsText(file);
+        };
+        
+        fileInput.click();
+    }
+    
+    // --- 初始化和事件監聽 ---
+    
+    filenameBaseInput.addEventListener('input', () => {
+        const oldBaseName = activeFile;
+        const newBaseName = filenameBaseInput.value.trim() || 'untitled';
+
+        if (newBaseName !== oldBaseName) {
+            if (projectData[oldBaseName]) {
+                projectData[newBaseName] = { ...projectData[oldBaseName] };
+                delete projectData[oldBaseName];
+                activeFile = newBaseName;
+            }
+        }
+        saveProjectData(); 
+        updateTabs();
+    });
+
+    extensionSelect.addEventListener('change', saveProjectData);
+    
+    let inputTimer;
+    editor.addEventListener('input', () => {
+        clearTimeout(inputTimer);
+        saveProjectData();
+        inputTimer = setTimeout(pushHistory, 500); 
+    });
+
+
+    loadProjectData();
+    loadActiveFile();
+    updateTabs();
+    
+    if (history.stack.length === 0) {
+        pushHistory();
+    }
+    
+</script>
+
+</body>
+</html>
