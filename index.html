@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HTMI 執行器</title>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <title>HTML 分頁執行器</title>  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/xml.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
@@ -27,7 +25,7 @@
             --danger-color-hover: #702121;
         }
 
-        /* 2. 文字恢復原本的簡潔字體 */
+        /* 介面字體和基礎佈局 */
         body {
             font-family: 'Google Sans', Roboto, Arial, sans-serif;
             margin: 0;
@@ -58,7 +56,7 @@
             flex-shrink: 0;
         }
         
-        /* Tab Bar (保持 v9 排版) */
+        /* Tab Bar 樣式 */
         .tab-bar {
             display: flex;
             justify-content: flex-start;
@@ -83,13 +81,11 @@
             box-shadow: none;
             transition: background-color 0.1s;
             font-weight: bold;
-            font-family: inherit; /* 使用 body 字體 */
+            font-family: inherit; 
         }
         
         .file-tab {
-            /* 恢復 v9 的字體大小 */
             font-size: 13px;
-            /* ... (其他樣式不變) */
         }
         
         .filename-group {
@@ -97,44 +93,83 @@
         }
         #filename-base-input, #extension-select {
             padding: 4px 6px; 
-            font-size: 13px; /* 與按鈕文字大小一致 */
+            font-size: 13px; 
             font-family: inherit;
         }
         
-        /* Q版純黑按鈕樣式 */
+        /* Q 版按鈕樣式 */
+        .file-action-controls { padding-top: 5px; }
         .file-action-controls button {
+            padding: 6px 10px; 
+            border-radius: 5px;
+            font-weight: bold;
             font-size: 13px;
-            font-family: inherit; /* 使用 body 字體 */
-            /* ... (其他樣式不變) */
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4); 
+            border: none;
+            font-family: inherit; 
+            transition: transform 0.1s ease-out, box-shadow 0.1s ease-out; 
+            cursor: pointer;
         }
         
+        .file-action-controls button:hover {
+            transform: translateY(-2px); 
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.6);
+        }
+        
+        .file-action-controls button:active {
+            transform: translateY(0); 
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .primary { background-color: var(--primary-color); color: white; }
+        .primary:hover { background-color: var(--primary-color-hover); }
+        .secondary { background-color: var(--secondary-color); color: var(--chrome-text-dark); }
+        .secondary:hover { background-color: var(--secondary-color-hover); }
+        .danger { background-color: var(--danger-color); color: white; }
+        .danger:hover { background-color: var(--danger-color-hover); }
+        
+        /* 狀態提示 */
         #status-message {
             font-size: 12px;
             font-family: inherit;
         }
 
-        /* 1. 程式碼/預覽區佈局 (恢復 v9 基礎) */
+        /* 佈局修正：程式碼/預覽區容器 */
         .editor-area {
             display: flex;
             gap: 5px; 
             flex-grow: 1; 
             min-height: 0; 
         }
+
+        /* 程式碼面板和預覽面板 */
         .code-panel, .preview-panel {
-            flex: 1;
+            flex: 1; 
             display: flex;
             flex-direction: column;
             border-radius: 4px; 
             overflow: hidden;
             box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5); 
             min-height: 0; 
+            min-width: 0; 
         }
         
         /* 預覽模式 CSS */
-        .preview-mode .code-panel { display: none; flex: 0; }
-        .preview-mode .preview-panel { flex: 100%; display: flex; }
-        .default-mode .preview-panel { display: none; flex: 0; }
-        .default-mode .code-panel { flex: 100%; }
+        .preview-mode .code-panel { 
+            display: none; 
+            flex: 0 0 0; 
+        }
+        .preview-mode .preview-panel { 
+            flex: 1 1 100%; 
+            display: flex; 
+        }
+        .default-mode .preview-panel { 
+            display: none; 
+            flex: 0 0 0; 
+        }
+        .default-mode .code-panel { 
+            flex: 1 1 100%; 
+        }
 
         .panel-title {
             padding: 4px 6px; 
@@ -144,15 +179,14 @@
             flex-shrink: 0;
             border-bottom: 1px solid var(--chrome-border);
         }
-        
-        /* 程式碼高亮和編輯器的容器 */
+
         .code-input-wrapper {
             position: relative;
             flex-grow: 1;
             min-height: 0;
         }
         
-        /* 隱藏的文字編輯區 (用於輸入) */
+        /* 編輯器 (隱藏文字和透明背景) */
         #editor { 
             position: absolute;
             top: 0;
@@ -167,15 +201,15 @@
             resize: none; 
             border: none;
             outline: none;
-            font-size: 13px; /* 恢復正常字體大小 */
+            font-size: 13px; 
             line-height: 1.5;
             z-index: 2; 
             white-space: pre; 
             overflow: auto;
-            font-family: 'Consolas', 'Courier New', monospace; /* 編輯器使用等寬字體 */
+            font-family: 'Consolas', 'Courier New', monospace; 
         }
 
-        /* 顯示高亮程式碼的區塊 */
+        /* 高亮顯示區 */
         #highlighted-code {
             position: absolute;
             top: 0;
@@ -188,7 +222,7 @@
             overflow: auto; 
             z-index: 1; 
             background-color: #2d2d2d; 
-            font-size: 13px; /* 恢復正常字體大小 */
+            font-size: 13px; 
             line-height: 1.5;
             font-family: 'Consolas', 'Courier New', monospace;
         }
@@ -246,7 +280,6 @@
             
             <div class="code-input-wrapper">
                 <textarea id="editor" placeholder="在此輸入您的 HTML, CSS, 和 JavaScript 程式碼..."></textarea>
-                
                 <pre><code class="language-xml" id="highlighted-code"></code></pre>
             </div>
         </div>
@@ -270,52 +303,37 @@
     const executeButton = document.getElementById('executeButton');
     const body = document.body;
 
-    const STORAGE_KEY = 'htmi_project_data_final_v13';
+    const STORAGE_KEY = 'htmi_project_data_final_v18'; // 儲存鍵已更新
     let projectData = {}; 
     let activeFile = 'index'; 
     let isPreviewVisible = false;
 
     // --- 程式碼高亮邏輯 ---
-
-    /**
-     * 執行程式碼高亮和滾動同步
-     */
     function applyHighlight() {
         const code = editor.value;
         const extension = extensionSelect.value;
-        
         let lang = 'xml'; 
-        if (extension === '.txt') {
-            lang = 'plaintext';
-        } else if (extension === '.html' || extension === '.htm') {
-            lang = 'xml'; // 適用於 HTML
-        }
+        if (extension === '.txt') { lang = 'plaintext'; } 
+        else if (extension === '.html' || extension === '.htm') { lang = 'xml'; }
         
-        // 1. 更新高亮內容
         highlightedCode.textContent = code;
         highlightedCode.className = 'language-' + lang;
-        
-        // 2. 調用 highlight.js 渲染
         hljs.highlightElement(highlightedCode);
-        
-        // 3. 同步滾動位置
         highlightedCode.parentElement.scrollTop = editor.scrollTop;
     }
 
     editor.addEventListener('input', () => {
         applyHighlight();
-        // 其餘邏輯 (儲存和歷史記錄)
         clearTimeout(inputTimer);
         saveProjectData();
         inputTimer = setTimeout(pushHistory, 500); 
     });
     
-    // 確保滾動條同步
     editor.addEventListener('scroll', () => {
         highlightedCode.parentElement.scrollTop = editor.scrollTop;
     });
 
-    // --- 歷史記錄與編輯功能 ---
+    // --- 歷史記錄與編輯功能 (保持不變) ---
     let history = { stack: [], pointer: -1, limit: 50 };
     function pushHistory() {
         if (editor.value === (history.stack[history.pointer]?.code || '')) return;
@@ -360,7 +378,7 @@
         }
     }
 
-    // --- 輔助函式 (保持不變) ---
+    // --- 輔助函式 ---
     function showStatus(message, duration = 2000) {
         statusMessage.textContent = message;
         statusMessage.classList.add('visible');
@@ -373,7 +391,7 @@
         return base.replace(/\.(html|txt|htm)$/i, '') + ext;
     }
 
-    // --- 內嵌預覽切換邏輯 (保持不變) ---
+    // --- 內嵌預覽切換邏輯 ---
     function enterPreviewMode() {
         const code = editor.value;
         const blob = new Blob([code], { type: 'text/html' });
@@ -398,7 +416,7 @@
         if (isPreviewVisible) { exitPreviewMode(); } else { enterPreviewMode(); }
     }
 
-    // --- 檔案與儲存邏輯 (保持不變) ---
+    // --- 檔案與儲存邏輯 ---
     function loadProjectData() {
         const storedData = localStorage.getItem(STORAGE_KEY);
         if (storedData) { projectData = JSON.parse(storedData); } 
@@ -467,7 +485,7 @@
         }
     }
 
-    // --- 介面操作函式 (保持不變) ---
+    // --- 介面操作函式 ---
     window.executeCodeNewWindow = function() {
         const code = editor.value;
         const blob = new Blob([code], { type: 'text/html' });
